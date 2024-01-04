@@ -1,0 +1,194 @@
+---
+title: "Analyzing and Visualizing Ridership Patterns in Île-de-France Rail Network"
+format: html
+editor: visual
+---
+
+## Project Overview
+
+In this data analysis project, students will delve into the ridership data of Île-de-France's railway stations spanning the years 2017 to 2022. The primary objective is to analyze and visualize the ridership patterns, creating a dashboard that allows stakeholders to monitor and compare ridership against the norm. The analysis will specifically focus on discerning variations from a typical week, distinguishing between regular weeks and holiday periods.
+
+```{r}
+#libraries
+library(ggplot2)
+library(readr)
+library(dplyr)
+library(shiny)
+```
+
+### 1. Data Collection and Cleaning
+
+The data that used for this study is imported from the STIF open data portal :
+
+```{r}
+
+db1 = read_delim('histo-validations-reseau-ferre.csv',delim=';')
+db2023nbf = read_delim('validations-reseau-ferre-nombre-validations-par-jour-1er-semestre.csv',delim=';')
+db2023nbf = db2023nbf %>% rename( ID_REFA_LDA = lda)
+
+```
+
+```{r}
+View(db1)
+View(db2023nbf)
+
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
+
+```{r}
+db2017s1nbf = read_delim('data-rf-2017/2017S1_NB_FER.txt')
+db2017s2nbf = read_delim('data-rf-2017/2017_S2_NB_FER.txt')
+db2017s1pf = read_delim('data-rf-2017/2017S1_PROFIL_FER.txt')
+db2017s2pf = read_delim('data-rf-2017/2017_S2_PROFIL_FER.txt')
+
+```
+
+### Visualizing the databases
+
+```{r}
+View(db2017s1nbf)
+View(db2017s2nbf)
+
+View(db2017s1pf)
+View(db2017s2pf)
+
+```
+
+We can see that the information in "*2017_S1_NB_FER.txt*" already exists in the second semester file *"2017_S2_NB_FER.txt",* so we'll use it to perform our analysis for that year.
+
+```{r}
+names(db2017s1nbf)
+names(db2017s2nbf)
+names(db2017s1pf)
+names(db2017s2pf)
+
+```
+
+```{r}
+db2017nbf = rbind(db2017s1nbf,db2017s2nbf)
+db2017pf = rbind(db2017s1pf,db2017s2pf)
+```
+
+```{r}
+db2018s1nbf = read_delim('data-rf-2018/2018_S1_NB_FER.txt')
+db2018s2nbf = read_delim('data-rf-2018/2018_S2_NB_Fer.txt')
+db2018s1pf = read_delim('data-rf-2018/2018_S1_PROFIL_FER.txt')
+db2018s2pf = read_delim('data-rf-2018/2018_S2_Profil_Fer.txt')
+
+```
+
+```{r}
+db2018nbf = rbind(db2018s1nbf,db2018s2nbf)
+db2018pf = rbind(db2018s1pf,db2018s2pf)
+
+
+```
+
+```{r}
+db2019s1nbf = read_delim('data-rf-2019/2019_S1_NB_FER.txt')
+db2019s2nbf = read_delim('data-rf-2019/2019_S2_NB_FER.txt')
+db2019s1pf = read_delim('data-rf-2019/2019_S1_PROFIL_FER.txt')
+db2019s2pf = read_delim('data-rf-2019/2019_S2_PROFIL_FER.txt')
+
+db2019nbf = rbind(db2019s1nbf,db2019s2nbf)
+db2019pf = rbind(db2019s1pf,db2019s2pf)
+
+```
+
+```{r}
+
+db2020s1nbf = read_delim('data-rf-2020/2020_S1_NB_FER.txt')
+db2020s2nbf = read_delim('data-rf-2020/2020_S2_NB_FER.txt')
+db2020s1pf = read_delim('data-rf-2020/2020_S1_PROFIL_FER.txt')
+db2020s2pf = read_delim('data-rf-2020/2020_S2_PROFIL_FER.txt')
+db2020nbf = rbind(db2020s1nbf,db2020s2nbf)
+db2020pf = rbind(db2020s1pf,db2020s2pf)
+```
+
+```{r}
+db2021s1nbf = read_delim('data-rf-2021/2021_S1_NB_FER.txt')
+db2021s2nbf = read_delim('data-rf-2021/2021_S2_NB_FER.txt')
+db2021s1pf = read_delim('data-rf-2021/2021_S1_PROFIL_FER.txt')
+db2021s2pf = read_delim('data-rf-2021/2021_S2_PROFIL_FER.txt')
+
+db2021nbf = rbind(db2021s1nbf,db2021s2nbf)
+db2021pf = rbind(db2021s1pf,db2021s2pf)
+```
+
+```{r}
+db2022s1nbf = read_delim('data-rf-2022/2022_S1_NB_FER.txt')
+db2022s2nbf = read_delim('data-rf-2022/2022_S2_NB_FER.txt')
+db2022s2nbf = db2022s2nbf %>% rename( ID_REFA_LDA = lda)
+db2022s1pf = read_delim('data-rf-2022/2022_S1_PROFIL_FER.txt')
+db2022s2pf = read_delim('data-rf-2022/2022_S2_PROFIL_FER.txt')
+db2022s2pf = db2022s2pf %>% rename( ID_REFA_LDA = lda)
+db2022nbf = rbind(db2022s1nbf,db2022s2nbf)
+db2022pf = rbind(db2022s1pf,db2022s2pf)
+```
+
+## The whole dataset
+
+We'll combine the datasets of each year in one dataset in order to prepare it for a clean up.
+
+```{r}
+#the whole database
+dbnbf = rbind(db2017nbf,db2018nbf,db2019nbf,db2020nbf,db2021nbf,db2022nbf,db2023nbf)
+dbpf = rbind(db2017pf,db2018pf,db2019pf,db2020pf,db2022pf)
+```
+
+## Dataset description:
+
+```{r}
+names(dbnbf)
+names(dbpf)
+
+```
+
+-   **dbnbf :** it represents a history of number of validations, with reference to the station and the transport passport used, it has the following columns :
+
+    -   **JOUR** : the date when the data entry is recorded
+
+    -   **CODE_STIF_TRNS**: code_stif_trns\[text\] Stif code of the carrier
+
+    -   **CODE_STIF_RES**: code_stif_res\[text\] Stif code of the network
+
+    -   **CODE_STIF_ARRET**: code_stif_arret\[text\] Stif code of the stop/station
+
+    -   **LIBELLE_ARRET**: libelle_arret\[text\] Label of the stop/station
+
+    -   **ID_REFA_LDA** : station zone code.
+
+    -   **CATEGORIE_TITRE** : The type of passport used to travel.
+
+    -   **NB_VALD** : the number of passeport's validations.
+
+-   **dbpf :** this dataset presents the hourly profiles of passenger validations per typical day and per stop on the rail network, it has the following columns :
+
+    -   **CODE_STIF_TRNS**: code_stif_trns\[text\] Stif code of the carrier
+
+    -   **CODE_STIF_RES**: code_stif_res\[text\] Stif code of the network
+
+    -   **CODE_STIF_ARRET**: code_stif_arret\[text\] Stif code of the stop/station
+
+    -   **LIBELLE_ARRET**: libelle_arret\[text\] Label of the stop/station
+
+    -   **ID_REFA_LDA** : station zone code.
+
+    -   **CAT_JOUR**: cat_jour\[text\] Category of the day : The calculations are carried out on all the data for the semester according to their category:
+
+        1.  JOHV: Working day excluding school holidays
+
+        2.  SAHV: Saturday outside school holidays.
+
+        3.  JOVS: Working Day during School Holidays.
+
+        4.  SAVS: Saturday during School Holidays.
+
+        5.  DIJFP: Sunday and public holidays and bridges.
+
+    -   **TRNC_HORR_60**: trnc_horr_60\[text\] One hour time slot
+
+    -   **pourc_validations**: pourc_validations\[double\] For a station i: Ratio between the number of validations at a station i, on a time slot TH, and the number of validations over the entire day at this station i.
+
+## Handling missing values :
